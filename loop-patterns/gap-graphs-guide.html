@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8">
+<title>Gap Graphs Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a field manual for the app. Numbered map first, then one card per control and panel. Same tokens as the app. */
+:root{
+  --paper:#f4f7fb; --card:#ffffff; --grid:#e3e9f2; --grid2:#d3dce8; --ink:#17212e; --muted:#5a6779;
+  --dec:#d6453a; --inc:#2c6cd4; --wall:#178a73; --hl:#fff1b8; --hlbar:#e8b400; --miss:#f6f8fb;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0d1828; --card:#122136; --grid:#172a44; --grid2:#24395a; --ink:#e4ecf7; --muted:#93a4bb;
+  --dec:#ff7b6e; --inc:#6ea8ff; --wall:#4fd1b5; --hl:#2c3a2a; --hlbar:#e8c043; --miss:#0f1c2f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0d1828; --card:#122136; --grid:#172a44; --grid2:#24395a; --ink:#e4ecf7; --muted:#93a4bb;
+  --dec:#ff7b6e; --inc:#6ea8ff; --wall:#4fd1b5; --hl:#2c3a2a; --hlbar:#e8c043; --miss:#0f1c2f; color-scheme:dark}
+
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 var(--body);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.wrap{max-width:1060px;margin:0 auto;padding-block:28px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:28px}
+h1{font:800 clamp(30px,5vw,44px)/1.05 var(--display);margin:0;letter-spacing:-.02em;text-wrap:balance}
+h1 .d{color:var(--dec)} h1 .i{color:var(--inc)}
+h2{font:800 24px/1.15 var(--display);margin:0 0 4px;letter-spacing:-.01em}
+:root{--claude:#d97757; --shades:#16181d}
+.credit{display:flex;flex-direction:column;gap:1px;margin-top:10px;font-size:13px;line-height:1.4;color:var(--muted);border-left:3px solid var(--claude);padding-left:12px}
+.credit .who{font-weight:700;color:var(--ink);font-size:14.5px}
+.credit a{color:var(--inc);text-decoration:none;user-select:all} .credit a:hover{text-decoration:underline}
+.credit .by{display:flex;align-items:center;gap:6px}
+.mascot{width:24px;height:20px;flex:none}.lede{margin:8px 0 0;color:var(--muted);max-width:62ch;font-size:16px}
+.open{display:inline-flex;gap:8px;align-items:center;margin-top:14px;background:var(--ink);color:var(--paper);text-decoration:none;font-weight:600;padding:9px 16px;border-radius:9px}
+.open:hover{opacity:.9}
+.sec-sub{margin:0 0 14px;color:var(--muted);max-width:65ch}
+code,kbd{font-family:var(--mono)}
+kbd{font-size:12px;border:1px solid var(--grid2);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--card);white-space:nowrap}
+
+/* map */
+.map{background:var(--card);border:1px solid var(--grid2);border-radius:14px;padding:12px;display:grid;gap:8px;
+  grid-template-columns:1.25fr 1.2fr .95fr;grid-template-areas:"tabs tabs tabs" "bar bar bar" "narr narr narr" "code graph out" "code graph vars" "code graph notes"}
+.zone{position:relative;border:1.5px dashed var(--grid2);border-radius:9px;background:var(--miss);min-height:38px;padding:8px 10px 8px 40px;display:flex;align-items:center;font-weight:600;font-size:14px}
+.zone .n,.card .n{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;font:700 12px var(--mono)}
+.z-tabs{grid-area:tabs} .z-bar{grid-area:bar} .z-narr{grid-area:narr}
+.z-code{grid-area:code;min-height:170px;align-items:flex-start} .z-graph{grid-area:graph;align-items:flex-start}
+.z-out{grid-area:out} .z-vars{grid-area:vars} .z-notes{grid-area:notes}
+.z-code .n,.z-graph .n{top:18px}
+@media (max-width:640px){.map{grid-template-columns:1fr;grid-template-areas:"tabs" "bar" "narr" "code" "graph" "out" "vars" "notes"} .z-code{min-height:60px}}
+
+/* cards */
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:720px){.cards{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--card);border:1px solid var(--grid2);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0}
+.card.wide{grid-column:1/-1}
+.shot{background:var(--paper);border:1px solid var(--grid2);border-radius:9px;padding:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;min-height:64px;overflow-x:auto}
+.card h3{margin:0;font:600 16px/1.3 var(--body);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card h3 .num{width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--paper);display:inline-grid;place-items:center;font:700 11px var(--mono)}
+.card p{margin:0;font-size:14px}
+.card ul{margin:0;padding-left:18px;font-size:14px;display:flex;flex-direction:column;gap:3px}
+.keys{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
+
+/* replicas of the app's controls */
+.ib{width:32px;height:32px;border-radius:8px;border:1px solid var(--grid2);background:var(--miss);display:grid;place-items:center;color:var(--ink)}
+.ib svg{width:18px;height:18px;fill:currentColor}
+.ib.play{width:44px;background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.tb{border:1px solid var(--grid2);background:var(--miss);border-radius:7px;padding:4px 8px;font:600 12px var(--mono);color:var(--ink)}
+.track{position:relative;width:240px;height:26px;display:flex;align-items:center}
+.track .rail{position:absolute;left:8px;right:8px;height:4px;border-radius:2px;background:var(--grid2)}
+.track .fill{position:absolute;left:8px;height:4px;border-radius:2px;background:var(--inc)}
+.track .thumb{position:absolute;width:16px;height:16px;border-radius:50%;background:var(--inc);margin-left:-8px;box-shadow:0 0 0 2px var(--card)}
+.track{height:30px}
+.track i{position:absolute;top:21px;height:6px;width:1.5px;margin-left:-.75px;background:var(--muted)}
+.c-dec{background:var(--dec)} .c-inc{background:var(--inc)} .c-wall{background:var(--wall)}
+.count{font:12px var(--mono);color:var(--muted)}
+.stepper{display:flex;align-items:center;border:1px solid var(--grid2);border-radius:8px;overflow:hidden;font-size:13px}
+.stepper span{background:var(--miss);width:26px;height:28px;display:grid;place-items:center;font-weight:600}
+.stepper b{min-width:30px;text-align:center;font:600 15px var(--mono)}
+.opt{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.sel{border:1px solid var(--grid2);background:var(--miss);border-radius:7px;padding:4px 8px;color:var(--ink);font-size:13px}
+.snd{border:1px solid var(--grid2);background:var(--miss);border-radius:8px;padding:4px 9px;font-size:13px;display:flex;gap:6px;align-items:center;color:var(--ink)}
+.snd svg{width:16px;height:16px;fill:currentColor} .snd.off{opacity:.6}
+.chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.box{width:14px;height:14px;border-radius:3px;background:var(--inc);display:grid;place-items:center}
+.box::after{content:"";width:7px;height:4px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translate(1px,-1px)}
+.tgroup{display:flex;gap:2px;background:var(--card);border:1px solid var(--grid2);border-radius:9px;padding:3px}
+.tgroup .glyph{font:800 17px/1 var(--display);padding:0 6px;display:grid;place-items:center;color:var(--muted)}
+.tab{border-radius:6px;padding:3px 8px;display:flex;flex-direction:column}
+.tab b{font:600 12px var(--mono)} .tab small{font-size:10.5px;color:var(--muted)}
+.tab.sel-tab{background:var(--ink);color:var(--paper)} .tab.sel-tab small{color:inherit;opacity:.75}
+.narr{display:flex;gap:10px;align-items:center}
+.where{font:600 11px var(--mono);color:var(--paper);background:var(--ink);border-radius:5px;padding:2px 7px;white-space:nowrap}
+.narr p{margin:0;font:600 15px/1.3 var(--display)}
+.code{font:11px/1.45 var(--mono);width:100%;background:var(--card);border-radius:6px;padding:4px 0}
+.ln{display:grid;grid-template-columns:28px minmax(0,1fr);white-space:pre;border-left:3px solid transparent}
+.ln .no{color:var(--muted);opacity:.6;text-align:right;padding-right:9px}
+.ln.active{background:var(--hl);border-left-color:var(--hlbar)} .ln.active .no{opacity:1;color:var(--ink);font-weight:600}
+.ev{grid-column:2;font-weight:600;padding:1px 0 3px} .ev span{background:var(--card);border:1px solid var(--hlbar);border-radius:5px;padding:1px 7px}
+.t-com{color:var(--muted);font-style:italic} .t-str{color:var(--wall)} .t-kw{color:var(--dec);font-weight:600} .t-fn{color:var(--inc)} .t-num{color:var(--hlbar)}
+.con{margin:0;background:var(--ink);color:var(--paper);border-radius:8px;padding:8px 12px;font:14px/1.3 var(--mono);white-space:pre}
+.con .in{color:color-mix(in srgb,var(--paper) 55%,var(--ink))} .con .star{color:var(--hlbar);font-weight:600}
+.con .sp.dec{background:color-mix(in srgb,var(--dec) 38%,var(--ink));color:color-mix(in srgb,var(--paper) 70%,var(--dec))}
+.con .sp.inc{background:color-mix(in srgb,var(--inc) 38%,var(--ink));color:color-mix(in srgb,var(--paper) 70%,var(--inc))}
+.vars{display:grid;grid-template-columns:auto auto;gap:1px 10px;margin:0;font:12px var(--mono)} .vars dt{color:var(--muted)} .vars dd{margin:0;font-weight:600}
+.chips{display:flex;gap:3px;flex-wrap:wrap}
+.chip{min-width:38px;border-radius:6px;padding:2px 4px;font:10px/1.2 var(--mono);text-align:center;border:1px solid var(--grid2);color:var(--muted);background:var(--miss)}
+.chip b{display:block;font-size:11px;color:var(--ink)}
+.chip.dec{background:color-mix(in srgb,var(--dec) 16%,var(--card));border-color:var(--dec)}
+.chip.inc{background:color-mix(in srgb,var(--inc) 16%,var(--card));border-color:var(--inc)}
+.chip.now{outline:2px solid var(--hlbar);outline-offset:1px;color:var(--ink)}
+.minig svg{width:100%;max-width:320px;height:auto;display:block}
+.figs{display:flex;flex-wrap:wrap;gap:16px 28px;justify-content:center;align-items:flex-end;width:100%}
+.figs figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:4px;flex:1 1 220px;max-width:330px}
+.figs figure.gridfig{max-width:230px}
+.figs figcaption{font:600 10.5px var(--body);letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.gc{stroke:var(--grid2);stroke-width:1}
+.gc.k-empty{fill:var(--card)} .gc.k-miss{fill:var(--miss)}
+.gc.k-wall{fill:color-mix(in srgb,var(--wall) 24%,var(--card))} .gc.k-diag{fill:color-mix(in srgb,var(--inc) 24%,var(--card))}
+.notes-mini{font-size:12.5px;display:flex;flex-direction:column;gap:6px;width:100%}
+.notes-mini blockquote{margin:0;border-left:3px solid var(--hlbar);padding:2px 0 2px 9px;font:11px/1.45 var(--mono);color:var(--muted)}
+.notes-mini .lbl{font:600 10.5px var(--body);letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+
+/* tables */
+.tbl{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--grid2);border-radius:12px;overflow:hidden;font-size:14px}
+.tbl th,.tbl td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--grid)}
+.tbl th{font:600 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--miss)}
+.tbl tr:last-child td{border-bottom:0}
+.tw{overflow-x:auto}
+.sw{display:inline-block;width:22px;height:8px;border-radius:3px;vertical-align:middle;margin-right:6px}
+.sw.hl{background:var(--hl);outline:1px solid var(--hlbar)}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Gap Graphs <span class="i">Guide</span></h1>
+    <div class="credit">
+      <span>by <b class="who">Tahsin Karcı</b></span>
+      <span>For any inconvenience or suggestion: <a href="mailto:tahsin.karci@ozu.edu.tr">tahsin.karci@ozu.edu.tr</a></span>
+      <span class="by">Animated by Claude <svg class="mascot" viewBox="0 0 12 10" shape-rendering="crispEdges" aria-hidden="true"><g fill="var(--claude)"><rect x="2" y="1" width="8" height="6"/><rect x="0" y="3" width="2" height="2"/><rect x="10" y="3" width="2" height="2"/><rect x="2" y="7" width="1" height="2"/><rect x="4" y="7" width="1" height="2"/><rect x="7" y="7" width="1" height="2"/><rect x="9" y="7" width="1" height="2"/></g><g fill="var(--shades)"><rect x="4" y="2" width="1" height="2"/><rect x="7" y="2" width="1" height="2"/></g></svg></span>
+    </div>
+    <p class="lede">How to use the K and N Gap Graphs animation: what each part of the screen shows and what every button does. The pictures below are drawn with the app's own styles, so they look the same as the real controls.</p>
+    <a class="open" href="gap-graphs.html">Open the app →</a>
+  </header>
+
+  <section>
+    <h2>Screen map</h2>
+    <p class="sec-sub">On a laptop or bigger screen, everything fits in one view. The numbers match the sections below.</p>
+    <div class="map" aria-label="Layout of the app">
+      <div class="zone z-tabs"><span class="n">1</span>File tabs</div>
+      <div class="zone z-bar"><span class="n">2</span>Control bar: play, step, iterations, progress, size, speed, sound</div>
+      <div class="zone z-narr"><span class="n">3</span>Narration line</div>
+      <div class="zone z-code"><span class="n">4</span>Code</div>
+      <div class="zone z-graph"><span class="n">5</span>Graph</div>
+      <div class="zone z-out"><span class="n">6</span>Printed output</div>
+      <div class="zone z-vars"><span class="n">7</span>Variables and iterations</div>
+      <div class="zone z-notes"><span class="n">8</span>How it works</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>1 · File tabs</h2>
+    <div class="cards">
+      <div class="card wide">
+        <div class="shot">
+          <div class="tgroup"><span class="glyph">K</span><span class="tab sel-tab"><b>letterK.py</b><small>down, then up</small></span><span class="tab"><b>letterKv2.py</b><small>anchored at k//2</small></span></div>
+          <div class="tgroup"><span class="glyph">N</span><span class="tab"><b>letterN.py</b><small>two opposite gaps</small></span><span class="tab"><b>letterNv2.py</b><small>grid, j = i</small></span><span class="tab"><b>letterNv3.py</b><small>grid, three rules</small></span></div>
+        </div>
+        <p>Pick which of the five Python files to animate. The small line under each name says which method it uses. The dark tab is the one on screen. If you switch while the animation is playing, the new file starts from the beginning.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2 · Control bar</h2>
+    <p class="sec-sub">There are three ways to move: play it continuously, jump one loop iteration at a time, or step one code line at a time.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="shot"><span class="ib play"><svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg></span><span class="ib play"><svg viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg></span></div>
+        <h3>Play / Pause</h3>
+        <p>Runs the animation on its own, one code line after another. Press again to pause. At the end, Play starts over from the first step. This button also turns the sound on, because browsers only allow sound after a click.</p>
+        <div class="keys"><kbd>Space</kbd></div>
+      </div>
+      <div class="card">
+        <div class="shot"><span class="ib"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></span><span class="ib"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></span></div>
+        <h3>Previous step / Next step</h3>
+        <p>Move exactly one code line back or forward. Use these to explain a single line, such as one <code>print</code> call or one <code>if</code> check. Stepping forward plays that line's sound.</p>
+        <div class="keys"><kbd>←</kbd><kbd>→</kbd></div>
+      </div>
+      <div class="card">
+        <div class="shot"><span class="tb">◀ i</span><span class="tb">i ▶</span></div>
+        <h3>Previous iteration / Next iteration</h3>
+        <p>Jump to the start of the previous or next loop iteration, so one press equals one row of the letter. If you're in the middle of an iteration, <b>◀ i</b> first goes back to the start of that same iteration.</p>
+        <div class="keys"><kbd>Shift</kbd>+<kbd>←</kbd><kbd>Shift</kbd>+<kbd>→</kbd></div>
+      </div>
+      <div class="card">
+        <div class="shot"><span class="ib"><svg viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></span></div>
+        <h3>Restart</h3>
+        <p>Goes back to the first step of the current file and pauses there.</p>
+        <div class="keys"><kbd>R</kbd></div>
+      </div>
+      <div class="card wide">
+        <div class="shot">
+          <div class="track" aria-hidden="true">
+            <div class="rail"></div><div class="fill" style="width:calc((100% - 16px) * .42)"></div>
+            <i style="left:calc(8px + (100% - 16px) * .04)"></i>
+            <i style="left:calc(8px + (100% - 16px) * .23)"></i>
+            <i style="left:calc(8px + (100% - 16px) * .42)"></i>
+            <i style="left:calc(8px + (100% - 16px) * .62)"></i>
+            <i style="left:calc(8px + (100% - 16px) * .81)"></i>
+            <span class="thumb" style="left:calc(8px + (100% - 16px) * .3)"></span>
+          </div>
+          <span class="count">i = 1 · 9 / 27</span>
+        </div>
+        <h3>Progress bar and counter</h3>
+        <ul>
+          <li>Drag the round handle to go to any step. Dragging pauses the animation.</li>
+          <li>Each small tick mark on the bar is the start of one loop iteration, so there is one tick per row of the letter. The <b>◀ i</b> and <b>i ▶</b> buttons jump from tick to tick.</li>
+          <li>The counter shows the current <code>i</code> and the step number, for example <code>i = 1 · 9 / 27</code>.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="shot"><span class="opt">size <span class="stepper"><span>−</span><b>5</b><span>+</span></span></span></div>
+        <h3>Size</h3>
+        <p>The number typed into <code>input()</code>, from 3 to 9. Changing it rebuilds the letter, the graph and every step. Try 7 or 9 on <code>letterK.py</code> to see the middle joint separate.</p>
+      </div>
+      <div class="card">
+        <div class="shot"><span class="opt">speed <span class="sel">1× ▾</span></span></div>
+        <h3>Speed</h3>
+        <p>How fast Play moves: 0.5×, 1×, 2× or 4×. Steps that print a single space run quicker, so grid files don't drag.</p>
+      </div>
+      <div class="card">
+        <div class="shot"><span class="snd"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>Sound on</span><span class="snd off"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/></svg>Sound off</span></div>
+        <h3>Sound</h3>
+        <p>Turns the sound effects on or off. The page remembers your choice in this browser. The <a href="#sounds">sound table</a> explains each sound.</p>
+      </div>
+      <div class="card">
+        <div class="shot"><span class="chk"><span class="box"></span> next file</span><span class="chk"><span class="box"></span> show spaces</span></div>
+        <h3>Next file / Show spaces</h3>
+        <ul>
+          <li><b>next file:</b> when one file finishes, Play continues with the next tab, so all five run as one tour.</li>
+          <li><b>show spaces:</b> draws each printed space as a dot in the output, so you can count them. Turn it off to see the plain letter.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>3–8 · Panels</h2>
+    <div class="cards">
+      <div class="card wide">
+        <div class="shot" style="justify-content:flex-start"><div class="narr"><span class="where">line 21</span><p>Print 2 spaces and plot (1, 2) on y = (k − 2) − i.</p></div></div>
+        <h3><span class="num">3</span>Narration line</h3>
+        <p>One sentence about what the current step does. The dark label shows which line of the real file is running, or <code>finished</code> at the end.</p>
+      </div>
+      <div class="card wide">
+        <div class="shot"><div class="code" style="max-width:560px">
+<div class="ln"><span class="no">18</span><span><span class="t-kw">for</span> i <span class="t-kw">in</span> <span class="t-fn">range</span>(k):</span></div>
+<div class="ln"><span class="no">19</span><span>    <span class="t-kw">if</span> i &lt; k // <span class="t-num">2</span>: <span class="t-com">#until the middle</span></span></div>
+<div class="ln"><span class="no">20</span><span>        <span class="t-fn">print</span>(<span class="t-str">"*"</span>, end=<span class="t-str">""</span>)</span></div>
+<div class="ln active"><span class="no">21</span><span>        <span class="t-fn">print</span>(<span class="t-str">" "</span> * (k - <span class="t-num">2</span> - i), end=<span class="t-str">""</span>)</span><div class="ev"><span>" " * (5 - 2 - 1) = 2 spaces</span></div></div>
+        </div></div>
+        <h3><span class="num">4</span>Code</h3>
+        <p>The file's code with a few short comments. The yellow line is running now, and the box under it shows the calculation with real numbers. The numbers on the left are the real line numbers in the <code>.py</code> file, so some numbers are skipped.</p>
+      </div>
+      <div class="card wide">
+        <div class="shot minig"><div class="figs"><figure><svg viewBox="0 0 320 170" role="img" aria-label="Example gap graph">
+          <g stroke="var(--grid)" stroke-width="1"><line x1="34" x2="310" y1="20" y2="20"/><line x1="34" x2="310" y1="60" y2="60"/><line x1="34" x2="310" y1="100" y2="100"/><line x1="34" x2="310" y1="140" y2="140"/></g>
+          <rect x="94" y="14" width="55" height="126" fill="var(--hl)"/>
+          <line x1="149" x2="149" y1="14" y2="140" stroke="var(--muted)" stroke-dasharray="3 4"/>
+          <g fill="var(--muted)" font-family="var(--mono)" font-size="10"><text x="26" y="24" text-anchor="end">3</text><text x="26" y="64" text-anchor="end">2</text><text x="26" y="104" text-anchor="end">1</text><text x="26" y="144" text-anchor="end">0</text>
+          <text x="66" y="156" text-anchor="middle">0</text><text x="121" y="156" text-anchor="middle">1</text><text x="176" y="156" text-anchor="middle">2</text><text x="231" y="156" text-anchor="middle">3</text><text x="286" y="156" text-anchor="middle">4</text></g>
+          <line x1="66" y1="20" x2="121" y2="60" stroke="var(--dec)" stroke-width="3" stroke-linecap="round"/>
+          <line x1="176" y1="100" x2="286" y2="20" stroke="var(--inc)" stroke-width="2" stroke-dasharray="7 5" opacity=".55"/>
+          <circle cx="66" cy="20" r="5.5" fill="var(--dec)" stroke="var(--card)" stroke-width="2"/>
+          <circle cx="121" cy="60" r="7" fill="var(--dec)" stroke="var(--card)" stroke-width="2"/>
+          <text x="121" y="45" text-anchor="middle" font-family="var(--mono)" font-size="11" font-weight="600" fill="var(--ink)">(1, 2)</text>
+        </svg><figcaption>Gap graph · letterK.py</figcaption></figure>
+        <figure class="gridfig"><svg id="gridPic" viewBox="0 0 212 196" role="img" aria-label="Example grid graph for letterNv3.py at n = 5"></svg><figcaption>Grid graph · letterNv3.py</figcaption></figure></div></div>
+        <h3><span class="num">5</span>Graph</h3>
+        <ul>
+          <li><b>Gap graph</b> (K files and letterN.py): x is the row <code>i</code>, y is the number of spaces. A point appears each time spaces are printed.</li>
+          <li><b>Grid graph</b> (letterNv2.py, letterNv3.py): every cell (row <code>i</code>, column <code>j</code>) lights up as it is checked. Teal cells match a wall (<code>j = 0</code> or <code>j = n − 1</code>), blue cells match the diagonal <code>i = j</code>, and pale cells match nothing and print a space. The yellow outline is the cell being checked now.</li>
+          <li>Dashed lines show where the formula goes. The yellow band is the current row, and the gray dashed line marks where a K switches from going down to going up.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="shot"><pre class="con"><span class="in">K=?:5</span>
+<span class="star">*</span><span class="sp dec">···</span><span class="star">*</span>
+<span class="star">*</span><span class="sp dec">··</span><span class="star">*</span>
+<span class="star">*</span><span class="sp inc">·</span><span class="star">*</span></pre></div>
+        <h3><span class="num">6</span>Printed output</h3>
+        <p>What Python prints, as it happens. Stars are yellow. Spaces show as dots colored by the line they came from, red for decreasing and blue for increasing, so the printout matches the graph.</p>
+      </div>
+      <div class="card">
+        <div class="shot" style="gap:18px;align-items:flex-start">
+          <dl class="vars"><dt>k</dt><dd>5</dd><dt>k//2</dt><dd>2</dd><dt>i</dt><dd>1</dd><dt>gap</dt><dd>2</dd></dl>
+          <div class="chips"><div class="chip dec"><b>i=0</b>gap 3</div><div class="chip now"><b>i=1</b>&nbsp;</div><div class="chip"><b>i=2</b>&nbsp;</div><div class="chip"><b>i=3</b>&nbsp;</div><div class="chip"><b>i=4</b>&nbsp;</div></div>
+        </div>
+        <h3><span class="num">7</span>Variables and iterations</h3>
+        <ul>
+          <li><b>Variables:</b> the current value of every variable. A value flashes when it changes, and <code>—</code> means it isn't set yet.</li>
+          <li><b>Iterations:</b> one chip per loop round. The outlined chip is the current one. Finished chips turn red or blue and show their gap.</li>
+        </ul>
+      </div>
+      <div class="card wide">
+        <div class="shot"><div class="notes-mini">
+          <span class="lbl">How it works</span>
+          <blockquote>#Because we did not fix the number of gaps to 1 in the middle.</blockquote>
+          <span>The lowest point of this V is <code>k//2 − 1</code>. It is 1 only when k = 5 …</span>
+          <span class="lbl">Review notes · Target shape</span>
+        </div></div>
+        <h3><span class="num">8</span>How it works</h3>
+        <p>The method behind the current file, the key comments from the code, review notes such as typos or logic to check, and the target shape drawn at the top of the file. This panel scrolls on its own if it's long.</p>
+      </div>
+    </div>
+  </section>
+
+  <script>
+  // Grid example: letterNv3.py with n = 5, paused at row 3, column 3.
+  (() => {
+    const n = 5, cs = 26, ox = 34, oy = 30, c = v => v*cs + cs/2;
+    const T = 'font-family="var(--mono)"';
+    let g = `<text x="${ox}" y="11" ${T} font-size="9.5" font-weight="600" fill="var(--muted)">COLUMN j →</text>`;
+    g += `<rect x="${ox-3}" y="${oy+3*cs}" width="${n*cs+6}" height="${cs}" fill="var(--hl)"/>`;
+    for (let j=0;j<n;j++) g += `<text x="${ox+c(j)}" y="${oy-6}" ${T} font-size="10" fill="var(--muted)" text-anchor="middle">${j}</text>`;
+    for (let i=0;i<n;i++){
+      g += `<text x="${ox-8}" y="${oy+c(i)+4}" ${T} font-size="10" fill="var(--muted)" text-anchor="end">${i}</text>`;
+      for (let j=0;j<n;j++){
+        const seen = i<3 || (i===3 && j<=3);
+        const k = !seen ? 'empty' : (j===0 || j===n-1) ? 'wall' : i===j ? 'diag' : 'miss';
+        g += `<rect class="gc k-${k}" x="${ox+j*cs+1.5}" y="${oy+i*cs+1.5}" width="${cs-3}" height="${cs-3}" rx="3"/>`;
+        if (k==='wall' || k==='diag') g += `<text x="${ox+c(j)}" y="${oy+c(i)+6}" ${T} font-size="15" font-weight="600" text-anchor="middle" fill="var(--${k==='wall'?'wall':'inc'})">*</text>`;
+      }
+    }
+    const dash = 'stroke-width="2" stroke-dasharray="6 4" stroke-linecap="round" opacity=".75"';
+    g += `<line x1="${ox+c(0)}" y1="${oy-2}" x2="${ox+c(0)}" y2="${oy+n*cs+3}" stroke="var(--wall)" ${dash}/>`;
+    g += `<line x1="${ox+c(n-1)}" y1="${oy-2}" x2="${ox+c(n-1)}" y2="${oy+n*cs+3}" stroke="var(--wall)" ${dash}/>`;
+    g += `<line x1="${ox+c(0)-8}" y1="${oy+c(0)-8}" x2="${ox+c(n-1)+8}" y2="${oy+c(n-1)+8}" stroke="var(--inc)" ${dash}/>`;
+    g += `<rect x="${ox+3*cs}" y="${oy+3*cs}" width="${cs}" height="${cs}" rx="5" fill="none" stroke="var(--hlbar)" stroke-width="3"/>`;
+    const lab = `${T} font-size="10.5" font-weight="600" paint-order="stroke" stroke="var(--paper)" stroke-width="3"`;
+    g += `<text x="${ox+c(0)}" y="${oy+n*cs+16}" ${lab} fill="var(--wall)" text-anchor="middle">j = 0</text>`;
+    g += `<text x="${ox+c(n-1)}" y="${oy+n*cs+16}" ${lab} fill="var(--wall)" text-anchor="middle">j = n−1</text>`;
+    g += `<text x="${ox+n*cs+4}" y="${oy+c(n-1)+16}" ${lab} fill="var(--inc)">i = j</text>`;
+    document.getElementById('gridPic').innerHTML = g;
+  })();
+  </script>
+
+  <section>
+    <h2>Colors</h2>
+    <div class="tw"><table class="tbl">
+      <thead><tr><th>Color</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><span class="sw c-dec"></span>Red</td><td>Decreasing line: the gap shrinks by 1 each row</td></tr>
+        <tr><td><span class="sw c-inc"></span>Blue</td><td>Increasing line: the gap grows by 1 each row, or the diagonal <code>j = i</code></td></tr>
+        <tr><td><span class="sw c-wall"></span>Teal</td><td>Constant: the side walls of the N, or a sum that never changes</td></tr>
+        <tr><td><span class="sw hl"></span>Yellow</td><td>What's happening now: the running code line, the current row, the current grid cell</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="sounds">
+    <h2>Sounds</h2>
+    <p class="sec-sub">Sound starts after your first click on Play or a step button.</p>
+    <div class="tw"><table class="tbl">
+      <thead><tr><th>You hear</th><th>It means</th></tr></thead>
+      <tbody>
+        <tr><td>Two rising chimes</td><td>The program reads the input number</td></tr>
+        <tr><td>Soft click</td><td>A new loop iteration starts</td></tr>
+        <tr><td>Short rising or falling beep</td><td>An <code>if</code> check is True or False</td></tr>
+        <tr><td>Sharp key click</td><td>A <code>*</code> is printed</td></tr>
+        <tr><td>Quick taps, then a note</td><td>One tap per printed space, then a note whose pitch matches the gap size. A K sounds lower and lower, then higher again.</td></tr>
+        <tr><td>Bell</td><td>The row ends with a new line</td></tr>
+        <tr><td>Four-note chord</td><td>The file has finished</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Keyboard shortcuts</h2>
+    <div class="tw"><table class="tbl">
+      <thead><tr><th>Key</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td><kbd>Space</kbd></td><td>Play / pause</td></tr>
+        <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Previous / next step (one code line)</td></tr>
+        <tr><td><kbd>Shift</kbd>+<kbd>←</kbd> <kbd>Shift</kbd>+<kbd>→</kbd></td><td>Previous / next iteration (one row)</td></tr>
+        <tr><td><kbd>R</kbd></td><td>Restart the current file</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+</div>
